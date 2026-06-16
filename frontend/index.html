@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Fraud Auditor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #ffffff; --bg-off: #fafafa; --text-main: #111111; --text-muted: #666666;
+            --border-color: #eaeaea; --accent-black: #000000; --danger-bg: #ffeef0; --danger-text: #e00022;
+            --safe-bg: #e6f6eb; --safe-text: #00802b; --radius: 6px;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body.dark-theme {
+            --bg-main: #0a0a0a; --bg-off: #111111; --text-main: #ededed; --text-muted: #a3a3a3;
+            --border-color: #333333; --accent-black: #ffffff; --danger-bg: #3b1219;
+            --danger-text: #ff4d4d; --safe-bg: #0b2b17; --safe-text: #22c55e;
+        }
+
+        body { font-family: var(--font-sans); background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 3rem 1rem; display: flex; justify-content: center; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background-color 0.3s ease, color 0.3s ease; }
+        .dashboard { width: 100%; max-width: 1040px; }
+        header { margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        header .title-area h1 { font-size: 1.5rem; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+        header .title-area span { font-size: 0.75rem; background: var(--bg-off); color: var(--text-muted); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 999px; vertical-align: middle; margin-left: 12px; font-weight: 500; }
+        .theme-btn { background: var(--bg-off); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .theme-btn:hover { border-color: var(--text-muted); }
+
+        .tabs { display: flex; gap: 2rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); }
+        .tab-btn { background: none; border: none; padding: 0 0 0.75rem 0; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: color 0.2s; border-bottom: 2px solid transparent; margin-bottom: -1px; outline: none; }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--text-main); border-bottom: 2px solid var(--accent-black); }
+        .tab-btn:focus { outline: none; }
+
+        .settings-bar { background: var(--bg-off); padding: 1.25rem 1.5rem; border-radius: var(--radius); border: 1px solid var(--border-color); margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.02);}
+        .settings-info strong { font-size: 0.875rem; }
+        .settings-info p { margin: 4px 0 0 0; font-size: 0.75rem; color: var(--text-muted); }
+        input[type=range] { width: 200px; accent-color: var(--accent-black); cursor: pointer;}
+
+        section { display: none; animation: fadeIn 0.3s ease; }
+        section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        h2 { font-size: 1.125rem; font-weight: 600; margin-top: 0; margin-bottom: 0; }
+        h3 { font-size: 0.9rem; font-weight: 600; margin-top: 0; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;}
+
+        .upload-box { border: 1px dashed var(--border-color); border-radius: var(--radius); padding: 4rem 2rem; text-align: center; background-color: var(--bg-main); transition: all 0.2s ease; cursor: pointer; }
+        .upload-box:hover, .upload-box.dragover { border-color: var(--accent-black); background-color: var(--bg-off); }
+        .upload-box p { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem; }
+
+        button { cursor: pointer; border-radius: var(--radius); font-family: var(--font-sans); font-weight: 500; font-size: 0.875rem; transition: all 0.2s; }
+        .secondary-btn { background: var(--bg-main); border: 1px solid var(--border-color); padding: 0.5rem 1rem; color: var(--text-main); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .secondary-btn:hover { border-color: var(--text-main); }
+        .primary-btn { background: var(--accent-black); color: var(--bg-main); border: 1px solid var(--accent-black); padding: 0.75rem 2rem; width: 100%; margin-top: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .primary-btn:hover { opacity: 0.8; }
+        .primary-btn:disabled { background: var(--border-color); border-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+
+        .loading { color: var(--text-muted); font-size: 0.875rem; text-align: center; margin-top: 1.5rem; font-weight: 500;}
+        #file-name { font-size: 0.875rem; margin-top: 1rem; color: var(--text-main); }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+        .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+        
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;}
+        .form-group input, .search-input { padding: 0.6rem 0.8rem; border: 1px solid var(--border-color); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.875rem; transition: border-color 0.2s; background-color: var(--bg-main); color: var(--text-main); outline: none; }
+        .form-group input:focus, .search-input:focus { border-color: var(--accent-black); }
+
+        .info-box { background-color: var(--bg-off); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1rem; margin-bottom: 2rem; font-size: 0.875rem; color: var(--text-muted); }
+        .info-box code { font-family: monospace; background: var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px; color: var(--text-main); font-size: 0.75rem; margin-right: 0.3rem; margin-bottom: 0.3rem; display: inline-block;}
+
+        .results-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .toolbar-actions { display: flex; gap: 1rem; align-items: center; }
+        
+        .results-container { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: start; }
+        .chart-box { padding: 1.5rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-main); }
+
+        .table-wrapper { border: 1px solid var(--border-color); border-radius: var(--radius); overflow-y: auto; max-height: 500px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+        th, td { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--bg-off); font-weight: 500; color: var(--text-muted); position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 var(--border-color); }
+        tr:last-child td { border-bottom: none; }
+
+        .flag-yes { background-color: var(--danger-bg); color: var(--danger-text); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem; }
+        .flag-no { background-color: var(--safe-bg); color: var(--safe-text); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem; }
+        .reason-text { color: var(--text-muted); font-size: 0.8125rem; line-height: 1.6;}
+        .timestamp-text { font-size: 0.75rem; color: var(--text-muted); }
+        #summary-text { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <div class="title-area">
+                <h1>Healthcare Fraud Auditor <span>Optuna AI Engine</span></h1>
+            </div>
+            <button id="theme-toggle" class="theme-btn">🌙 Dark Mode</button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('batch-tab')">Batch Audit</button>
+            <button class="tab-btn" onclick="switchTab('single-tab')">Single Provider</button>
+            <button class="tab-btn" onclick="loadHistory()">Audit History</button>
+            <button class="tab-btn" onclick="switchTab('insights-tab')" style="color: var(--text-main); font-weight: 600;">📊 Global Insights</button>
+        </div>
+
+        <div class="settings-bar">
+            <div class="settings-info">
+                <strong>AI Trigger Sensitivity: <span id="threshold-val" style="color: var(--danger-text);">35%</span></strong>
+                <p>Lower = Catches more fraud (High Recall). Higher = Fewer false alarms (High Precision).</p>
+            </div>
+            <input type="range" id="threshold-slider" min="10" max="90" value="35">
+        </div>
+        
+        <main>
+            <section id="batch-tab" class="active">
+                <div class="upload-box" id="drop-zone">
+                    <p>Drag and drop your processed CSV here, or click to browse</p>
+                    <input type="file" id="file-input" accept=".csv" style="display: none;">
+                    <button id="browse-btn" class="secondary-btn">Select File</button>
+                </div>
+                <p id="file-name"></p>
+                <button id="audit-batch-btn" class="primary-btn" disabled>Run AI Analysis</button>
+            </section>
+
+            <section id="single-tab">
+                <form id="single-form">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Provider ID</label><input type="text" id="p_id" value="PRV-TEST-01" required></div>
+                        <div class="form-group"><label>Total Inpatient Claims</label><input type="number" id="p_inpatient" value="5" required></div>
+                        <div class="form-group"><label>Total Claim Amt ($)</label><input type="number" id="p_total_amt" value="50000" required></div>
+                        <div class="form-group"><label>Avg Claim Amt ($)</label><input type="number" id="p_avg_amt" value="10000" required></div>
+                        <div class="form-group"><label>Claim Amt Std Dev</label><input type="number" id="p_std" value="2000" required></div>
+                        <div class="form-group"><label>Total Deductible ($)</label><input type="number" id="p_deductible" value="5000" required></div>
+                        <div class="form-group"><label>Patient Risk Profile</label><input type="number" step="0.01" id="p_risk_profile" value="2.5" required></div>
+                        <div class="form-group"><label>Avg Part A Coverage (Mo)</label><input type="number" step="0.01" id="p_partA" value="12" required></div>
+                        <div class="form-group"><label>Avg Alzheimer Risk</label><input type="number" step="0.01" id="p_alz" value="0.5" required></div>
+                        <div class="form-group"><label>Avg Heart Failure Risk</label><input type="number" step="0.01" id="p_heart" value="0.6" required></div>
+                        <div class="form-group"><label>Avg Kidney Disease Risk</label><input type="number" step="0.01" id="p_kidney" value="0.4" required></div>
+                        <div class="form-group"><label>Avg Cancer Risk</label><input type="number" step="0.01" id="p_cancer" value="0.2" required></div>
+                        <div class="form-group"><label>Avg Annual Reimbursement</label><input type="number" id="p_annual_reimb" value="15000" required></div>
+                    </div>
+                    <button type="button" id="audit-single-btn" class="primary-btn">Analyze Provider</button>
+                </form>
+            </section>
+
+            <section id="history-tab">
+                <div class="table-wrapper">
+                    <table id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Provider</th>
+                                <th>Status</th>
+                                <th>Confidence</th>
+                                <th>AI Reasoning</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="insights-tab">
+                <h2 style="margin-bottom: 1.5rem;">Macro Analytics Dashboard</h2>
+                <div id="insights-empty" class="info-box">
+                    Run a <b>Batch Audit</b> first to generate network-wide insights for the uploaded dataset.
+                </div>
+                
+                <div id="insights-content" style="display: none;">
+                    <div class="insights-grid">
+                        <div class="chart-box">
+                            <h3>Risk Score Distribution</h3>
+                            <canvas id="distChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h3>Top Fraud Drivers (SHAP AI)</h3>
+                            <canvas id="driverChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <p id="loading-text" class="loading" style="display: none;">Running inference and generating SHAP values...</p>
+
+            <section id="results-section">
+                <div class="results-toolbar">
+                    <h2>Analysis Results</h2>
+                    <div class="toolbar-actions">
+                        <input type="text" id="search-input" class="search-input" placeholder="Search Provider ID...">
+                        <button id="export-btn" class="secondary-btn">⬇ Export CSV</button>
+                    </div>
+                </div>
+                <p id="summary-text"></p>
+                <div class="results-container">
+                    <div class="chart-box" id="chart-container" style="display:none;">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>Status</th>
+                                    <th>Confidence</th>
+                                    <th>AI Reasoning</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        const initialIsDark = document.body.classList.contains('dark-theme');
+        Chart.defaults.color = initialIsDark ? '#a3a3a3' : '#666666'; 
+        Chart.defaults.borderColor = initialIsDark ? '#333333' : '#eaeaea'; 
+
+        let currentAuditData = []; 
+        let riskChartInstance = null;
+        let distChartInst = null;
+        let driverChartInst = null;
+        let selectedFile = null;
+
+        const thresholdSlider = document.getElementById('threshold-slider');
+        const thresholdVal = document.getElementById('threshold-val');
+        
+        thresholdSlider.addEventListener('input', (e) => {
+            thresholdVal.textContent = e.target.value + '%';
+        });
+
+        const themeBtn = document.getElementById('theme-toggle');
+        const body = document.body;
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark-theme');
+            themeBtn.innerHTML = '☀️ Light Mode';
+            Chart.defaults.color = '#a3a3a3';
+            Chart.defaults.borderColor = '#333333';
+        }
+        themeBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            const isDark = body.classList.contains('dark-theme');
+            themeBtn.innerHTML = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            Chart.defaults.color = isDark ? '#a3a3a3' : '#666666';
+            Chart.defaults.borderColor = isDark ? '#333333' : '#eaeaea';
+            
+            if (riskChartInstance) riskChartInstance.update();
+            if (distChartInst) distChartInst.update();
+            if (driverChartInst) {
+                driverChartInst.data.datasets[0].backgroundColor = isDark ? '#ffffff' : '#111111';
+                driverChartInst.update();
+            }
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('section').forEach(s => { if(s.id !== 'results-section') s.classList.remove('active')});
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            
+            if (tabId === 'batch-tab' && currentAuditData.length > 0) {
+                document.getElementById('results-section').style.display = 'block';
+            } else {
+                document.getElementById('results-section').style.display = 'none';
+            }
+        }
+
+        async function loadHistory() {
+            switchTab('history-tab');
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/history');
+                const result = await response.json();
+                const tbody = document.getElementById('history-body');
+                tbody.innerHTML = '';
+                
+                if (result.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No audits run yet.</td></tr>';
+                    return;
+                }
+
+                result.data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const flagClass = item.fraud_flag === 'Yes' ? 'flag-yes' : 'flag-no';
+                    const aiReason = item.reason ? item.reason : "N/A";
+                    
+                    tr.innerHTML = `
+                        <td class="timestamp-text">${item.timestamp}</td>
+                        <td style="font-weight: 500; color: var(--text-main);">${item.provider_id}</td>
+                        <td><span class="${flagClass}">${item.fraud_flag === 'Yes' ? 'Flagged' : 'Clean'}</span></td>
+                        <td style="font-variant-numeric: tabular-nums;">${item.risk_score}%</td>
+                        <td class="reason-text">${aiReason}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Could not load history:", error);
+            }
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const auditBatchBtn = document.getElementById('audit-batch-btn');
+
+        dropZone.addEventListener('click', (e) => { if(e.target !== browseBtn) fileInput.click(); });
+        browseBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+            dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            const fileNameDisplay = document.getElementById('file-name');
+            if (file && file.name.endsWith('.csv')) {
+                selectedFile = file;
+                fileNameDisplay.innerHTML = `<span style="color:var(--safe-text); font-weight:500;">✓ Ready:</span> ${file.name}`;
+                auditBatchBtn.disabled = false;
+            } else {
+                alert("Please upload a valid .csv file.");
+                selectedFile = null;
+                fileNameDisplay.innerHTML = '';
+                auditBatchBtn.disabled = true;
+            }
+        }
+
+        auditBatchBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            const currentThreshold = parseFloat(thresholdSlider.value) / 100;
+            formData.append('threshold', currentThreshold);
+            
+            await sendToAPI('http://127.0.0.1:8000/api/audit-providers', formData, false);
+        });
+
+        document.getElementById('audit-single-btn').addEventListener('click', async () => {
+            const payload = {
+                provider_id: document.getElementById('p_id').value,
+                Total_Inpatient_Claims: parseFloat(document.getElementById('p_inpatient').value) || 0,
+                Total_Claim_Amt: parseFloat(document.getElementById('p_total_amt').value) || 0,
+                Avg_Claim_Amt: parseFloat(document.getElementById('p_avg_amt').value) || 0,
+                Claim_Amt_Std: parseFloat(document.getElementById('p_std').value) || 0,
+                Total_Deductible_Amt: parseFloat(document.getElementById('p_deductible').value) || 0,
+                Patient_Risk_Profile: parseFloat(document.getElementById('p_risk_profile').value) || 0,
+                Avg_PartA_Coverage: parseFloat(document.getElementById('p_partA').value) || 0,
+                Avg_Alzheimer_Risk: parseFloat(document.getElementById('p_alz').value) || 0,
+                Avg_HeartFailure_Risk: parseFloat(document.getElementById('p_heart').value) || 0,
+                Avg_KidneyDisease_Risk: parseFloat(document.getElementById('p_kidney').value) || 0,
+                Avg_Cancer_Risk: parseFloat(document.getElementById('p_cancer').value) || 0,
+                Avg_Annual_Reimbursement: parseFloat(document.getElementById('p_annual_reimb').value) || 0,
+                threshold: parseFloat(thresholdSlider.value) / 100
+            };
+            await sendToAPI('http://127.0.0.1:8000/api/audit-single', JSON.stringify(payload), true);
+        });
+
+        async function sendToAPI(url, data, isJson) {
+            document.getElementById('loading-text').style.display = 'block';
+            document.getElementById('results-section').style.display = 'none';
+
+            let fetchOptions = { method: 'POST', body: data };
+            if (isJson) fetchOptions.headers = { 'Content-Type': 'application/json' };
+
+            try {
+                const response = await fetch(url, fetchOptions);
+                const resultData = await response.json();
+                
+                if (!response.ok) throw new Error("Server failed to process request.");
+
+                currentAuditData = resultData.data; 
+                renderResults(currentAuditData, !isJson); 
+                
+                if (!isJson) {
+                    renderInsights(currentAuditData);
+                }
+                
+                document.getElementById('search-input').value = ''; 
+            } catch (error) {
+                alert("Error: Make sure your Python Uvicorn server is running! \n" + error.message); 
+            } finally {
+                document.getElementById('loading-text').style.display = 'none';
+            }
+        }
+
+        function renderTableOnly(data) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const flagClass = item.fraud_flag === 'Yes' ? 'flag-yes' : 'flag-no';
+                const aiReason = item.reason ? item.reason : "N/A";
+                tr.innerHTML = `
+                    <td style="font-weight: 500; color: var(--text-main);">${item.provider_id}</td>
+                    <td><span class="${flagClass}">${item.fraud_flag === 'Yes' ? 'Flagged' : 'Clean'}</span></td>
+                    <td style="font-variant-numeric: tabular-nums;">${item.risk_score}%</td>
+                    <td class="reason-text">${aiReason}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderResults(data, showChart) {
+            renderTableOnly(data);
+            let highRiskCount = 0, cleanCount = 0;
+            data.forEach(item => { if (item.fraud_flag === 'Yes') highRiskCount++; else cleanCount++; });
+
+            document.getElementById('summary-text').innerHTML = `Analyzed <b>${data.length}</b> provider profile(s).`;
+            document.getElementById('results-section').style.display = 'block';
+
+            const chartContainer = document.getElementById('chart-container');
+            const resultsGrid = document.querySelector('.results-container');
+            
+            if (showChart && data.length > 1) {
+                chartContainer.style.display = 'block';
+                resultsGrid.style.gridTemplateColumns = "300px 1fr";
+                
+                const ctx = document.getElementById('riskChart').getContext('2d');
+                if (riskChartInstance) riskChartInstance.destroy(); 
+                
+                riskChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Flagged', 'Clean'], datasets: [{ data: [highRiskCount, cleanCount], backgroundColor: ['#e00022', '#00802b'], borderWidth: 0 }] },
+                    options: { responsive: true, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } }
+                });
+            } else {
+                chartContainer.style.display = 'none';
+                resultsGrid.style.gridTemplateColumns = "1fr"; 
+            }
+        }
+
+        function renderInsights(data) {
+            if (data.length < 5) return; 
+            
+            document.getElementById('insights-empty').style.display = 'none';
+            document.getElementById('insights-content').style.display = 'block';
+
+            let bins = [0, 0, 0, 0, 0]; 
+            let driverCounts = {};
+
+            data.forEach(item => {
+                let score = parseFloat(item.risk_score);
+                if (score <= 20) bins[0]++;
+                else if (score <= 40) bins[1]++;
+                else if (score <= 60) bins[2]++;
+                else if (score <= 80) bins[3]++;
+                else bins[4]++;
+
+                if (item.fraud_flag === 'Yes' && item.reason) {
+                    let reasonsArray = item.reason.split('<br>');
+                    
+                    reasonsArray.forEach(r => {
+                        // SMART MAPPING: Convert long sentences to short, punchy chart labels
+                        let shortLabel = "Other Anomalies";
+                        
+                        if (r.includes("billed volume exceeds")) shortLabel = "Total Billed Volume";
+                        else if (r.includes("deductible accumulation")) shortLabel = "Total Deductibles";
+                        else if (r.includes("cost per claim is unusually high")) shortLabel = "Avg Claim Cost";
+                        else if (r.includes("variance indicates inconsistent coding")) shortLabel = "Claim Variance (Std Dev)";
+                        else if (r.includes("frequency of admissions")) shortLabel = "Inpatient Admissions";
+                        else if (r.includes("concentration of high-risk patients")) shortLabel = "Patient Risk Profile";
+                        else if (r.includes("Part A Medicare durations")) shortLabel = "Part A Coverage";
+                        else if (r.includes("Alzheimer's care")) shortLabel = "Alzheimer's Claims";
+                        else if (r.includes("Heart Failure")) shortLabel = "Heart Failure Claims";
+                        else if (r.includes("Renal/ESRD")) shortLabel = "Renal/ESRD Claims";
+                        else if (r.includes("Oncology claims")) shortLabel = "Cancer/Oncology Claims";
+                        else if (r.includes("reimbursement rates exceed")) shortLabel = "Annual Reimbursement";
+                        
+                        if (shortLabel !== "Other Anomalies") {
+                            driverCounts[shortLabel] = (driverCounts[shortLabel] || 0) + 1;
+                        }
+                    });
+                }
+            });
+
+            const ctxDist = document.getElementById('distChart').getContext('2d');
+            if (distChartInst) distChartInst.destroy();
+            distChartInst = new Chart(ctxDist, {
+                type: 'bar',
+                data: {
+                    labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+                    datasets: [{
+                        label: 'Providers',
+                        data: bins,
+                        backgroundColor: ['#00802b', '#22c55e', '#f59e0b', '#f97316', '#e00022'],
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+
+            let sortedDrivers = Object.entries(driverCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const ctxDriver = document.getElementById('driverChart').getContext('2d');
+            if (driverChartInst) driverChartInst.destroy();
+            
+            const isDark = document.body.classList.contains('dark-theme');
+            const barColor = isDark ? '#ffffff' : '#111111';
+
+            driverChartInst = new Chart(ctxDriver, {
+                type: 'bar',
+                data: {
+                    labels: sortedDrivers.map(d => d[0]),
+                    datasets: [{
+                        label: 'Times Flagged',
+                        data: sortedDrivers.map(d => d[1]),
+                        backgroundColor: barColor,
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    indexAxis: 'y', 
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
